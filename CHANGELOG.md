@@ -4,7 +4,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 📋 Daftar Rilis Firmware
+## Daftar Rilis Firmware
 
 | Versi | Nama File | Ukuran (Bytes) | MD5 | SHA-256 | Keterangan |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -19,12 +19,12 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🎵 Versi 1.5 (`k11-firmware-v1.5-standalone-rtsp.bin`) — *2026-11-24*
+## Versi 1.5 (`k11-firmware-v1.5-standalone-rtsp.bin`) — *2026-11-24*
 
 **Status:** Master Production Firmware (Rilis Terbaru)  
 **File Path:** [k11-firmware-v1.5-standalone-rtsp.bin](file:///d:/Elektro/K11-Camera/k11-firmware-v1.5-standalone-rtsp.bin)
 
-### ✨ Fitur Baru: Audio Chime / Boot Sound Selesai Startup
+### Fitur Baru: Audio Chime / Boot Sound Selesai Startup
 1. **Integrasi Pemutar Audio Anyka (`ak_adec_demo`):**
    - Menambahkan program audio decoder native Anyka `/opt/rtsp/bin/ak_adec_demo` (mendukung MP3, AAC, PCM).
 2. **Kustom Audio Chime (`camera_on`):**
@@ -39,12 +39,12 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🌟 Versi 1.4 (`k11-firmware-v1.4-standalone-rtsp.bin`) — *2026-11-24*
+## Versi 1.4 (`k11-firmware-v1.4-standalone-rtsp.bin`) — *2026-11-24*
 
 **Status:** Master Production Firmware (Rilis Terbaru)  
 **File Path:** [k11-firmware-v1.4-standalone-rtsp.bin](file:///d:/Elektro/K11-Camera/k11-firmware-v1.4-standalone-rtsp.bin)
 
-### 🐛 Akar Masalah Night Vision Terkunci (Stuck in Night Mode):
+### Akar Masalah Night Vision Terkunci (Stuck in Night Mode):
 1. **Hardware Quirk SAR ADC Anyka:**
    - Sirkuit pembacaan analog `/sys/kernel/ain/ain0` menggunakan arsitektur SAR ADC dengan kapasitor *sample-and-hold*.
    - Saat node `ain0` dibaca pertama kali setelah idle, driver mengembalikan tegangan sisa kapasitor yang belum terisi/terkalibrasi penuh (`dummy = ~750 - 804`).
@@ -55,7 +55,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
    - Di bawah lampu ruangan normal, nilai riil LDR K11 berada di rentang **540 - 670**, sehingga **TIDAK PERNAH mencapai < 400**.
    - Akibatnya, begitu kamera pernah masuk Mode Malam, kamera terkunci selamanya di Mode Malam (filter IR-Cut tetap ditarik keluar, menyebabkan pakaian/objek tampak ungu/pink di bawah lampu ruangan).
 
-### ✨ Solusi & Penyempurnaan v1.4:
+### Solusi & Penyempurnaan v1.4:
 1. **ADC Flush / Settling Read:**
    - Menambahkan dummy read cepat untuk membuang muatan kapasitor: `cat /sys/kernel/ain/ain0 > /dev/null; usleep 20000`, diikuti pembacaan nilai riil.
 2. **Kalibrasi Presisi Ambang Batas Berdasarkan Data Hardware Nyata:**
@@ -68,12 +68,12 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🌟 Versi 1.3 (`k11-firmware-v1.3-standalone-rtsp.bin`) — *2026-11-24*
+## Versi 1.3 (`k11-firmware-v1.3-standalone-rtsp.bin`) — *2026-11-24*
 
 **Status:** Master Production Firmware (Rilis Terbaru)  
 **File Path:** [k11-firmware-v1.3-standalone-rtsp.bin](file:///d:/Elektro/K11-Camera/k11-firmware-v1.3-standalone-rtsp.bin)
 
-### ✨ Perbaikan Ambang Batas Auto Night Vision (Hardware Sensor LDR):
+### Perbaikan Ambang Batas Auto Night Vision (Hardware Sensor LDR):
 1. **Analisis Sirkuit Hardware:**
    - Sirkuit photoresistor (LDR) pada board BoyKeep K11 terhubung secara *pull-up*.
    - Saat ruangan **GELAP**, resistansi LDR meningkat sehingga tegangan ADC **TINGGI (ADC > 650)** (terbaca ~770 - 840 pada pengujian nyata).
@@ -85,12 +85,12 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🏆 Versi 1.2 (`k11-firmware-v1.2-standalone-rtsp.bin`) — *2026-11-24*
+## Versi 1.2 (`k11-firmware-v1.2-standalone-rtsp.bin`) — *2026-11-24*
 
 **Status:** Teruji Live & Terbukti Streaming di LAN (`<CAMERA_IP>`)  
 **File Path:** [k11-firmware-v1.2-standalone-rtsp.bin](file:///d:/Elektro/K11-Camera/k11-firmware-v1.2-standalone-rtsp.bin)
 
-### ✨ Penyempurnaan dari Versi 1.1:
+### Penyempurnaan dari Versi 1.1:
 1. **Direct Wi-Fi Auto-Connect (Tanpa Timeout AP Hotspot):**
    - Mengatasi masalah di mana kamera sebelumnya sempat menyala dalam mode Hotspot `K11-SETUP`.
    - Menambahkan skrip startup `/etc/init.d/rcS_wifi.sh` di partisi JFFS2 yang langsung menjalankan asosiasi ke SSID `YOUR_WIFI_SSID` dengan kredensial WPA2 yang telah teruji.
@@ -102,7 +102,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🛡️ Versi 1.0-Live Golden Backup (`k11-dump4.bin`) — *2026-11-23*
+## Versi 1.0-Live Golden Backup (`k11-dump4.bin`) — *2026-11-23*
 
 **Status:** Teruji Fisik 100% Berhasil Hidup & Terhubung  
 **File Path:** [k11-dump4.bin](file:///d:/Elektro/K11-Camera/k11-dump4.bin)
@@ -116,12 +116,12 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 🚀 Versi 1.1 (`k11-firmware-v1.1-standalone-rtsp.bin`) — *2026-11-23*
+## Versi 1.1 (`k11-firmware-v1.1-standalone-rtsp.bin`) — *2026-11-23*
 
 **Status:** Rilis Produksi Master (Siap Flash Massal)  
 **File Path:** [k11-firmware-v1.1-standalone-rtsp.bin](file:///d:/Elektro/K11-Camera/k11-firmware-v1.1-standalone-rtsp.bin)
 
-### ✨ Fitur Baru & Peningkatan:
+### Fitur Baru & Peningkatan:
 1. **Full Standalone RTSP Server (Port 554):**
    - RTSP Streaming H.264 standar langsung aktif tanpa perlu microSD card atau injeksi script manual.
    - Main Stream: `rtsp://<IP_KAMERA>:554/vs0` (1280x720 @ 25fps + G.711A Audio).
@@ -138,7 +138,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
    - Auto-connect ke Wi-Fi SSID `YOUR_WIFI_SSID` (Password: `YOUR_WIFI_PASSWORD`).
    - Root Telnet tetap aktif pada port 23 (`login: root`, tanpa password).
 
-### 🐛 Bugfixes dari Percobaan Sebelumnya:
+### Bugfixes dari Percobaan Sebelumnya:
 - **[CRITICAL] Superblock Flag Incompatibility Fix:**
   - *Masalah:* Tool `tar2sqfs` sebelumnya menggunakan flag modern `0x0260` (termasuk `0x0200` = `SQUASHFS_NO_XATTR`). Kernel Linux 3.4.35 Anyka menolak flag ini dengan kode error `-EINVAL: unknown flags 0x260`, menyebabkan partisi `/opt` gagal di-mount.
   - *Solusi:* Partisi dibangun ulang menggunakan `gensquashfs` dengan flag yang disesuaikan ke `0x00c0` (identik persis dengan firmware pabrik Anyka). Partisi kini di-mount 100% mulus oleh kernel.
@@ -151,7 +151,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 📦 Versi 1.0 (`k11-firmware-preconfigured.bin`) — *2026-11-22*
+## Versi 1.0 (`k11-firmware-preconfigured.bin`) — *2026-11-22*
 
 **Status:** Teruji Live & Berhasil Boot  
 **File Path:** [k11-firmware-preconfigured.bin](file:///d:/Elektro/K11-Camera/k11-firmware-preconfigured.bin)
@@ -165,7 +165,7 @@ Dokumen ini mencatat seluruh riwayat versi firmware, perubahan partisi, perbaika
 
 ---
 
-## 💾 Struktur Partisi Flash SPI NOR FM25Q64 (8 MB)
+## Struktur Partisi Flash SPI NOR FM25Q64 (8 MB)
 
 Berdasarkan environment U-Boot dan `mtdparts=spi0.0:0x00050000(boot),0x00190000(kernel),0x00200000(rootfs),0x00330000(user),0x000e0000(mtd),0x00010000(factory)`:
 
