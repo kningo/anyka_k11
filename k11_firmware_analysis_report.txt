@@ -1,0 +1,102 @@
+BOYKEEP EASE LIFE K11 - STATIC FIRMWARE ANALYSIS (continued)
+============================================================
+
+Input
+-----
+File: k11-dump2.bin
+Size: 8,388,608 bytes (8 MiB)
+SHA-256: b8f235ab8a3a81d449debb192a71c770ee57e0f9792769955e671f28c27668e0
+
+Method / limits
+---------------
+- Read-only analysis. The source dump was not modified.
+- Both SquashFS images were parsed using a Python reader for SquashFS 4.0 metadata and XZ data blocks; all listed regular files were reconstructed successfully after handling metadata entries spanning 8 KiB metadata blocks.
+- The extraction environment did not contain unsquashfs/sasquatch, and loop mounting was unavailable. The parser extracted file contents but is not a full replacement for the reference unsquashfs implementation.
+- Credential material is intentionally redacted from this report and inventory.
+
+Partition map (confirmed independently by /part.env in user SquashFS)
+--------------------------------------------------------------------
+boot     0x000000 - 0x04FFFF  size 0x050000
+kernel   0x050000 - 0x1DFFFF  size 0x190000
+rootfs   0x1E0000 - 0x3DFFFF  size 0x200000
+user     0x3E0000 - 0x70FFFF  size 0x330000
+mtd      0x710000 - 0x7EFFFF  size 0x0E0000
+factory  0x7F0000 - 0x7FFFFF  size 0x010000
+
+SquashFS validation
+-------------------
+RootFS:
+  Offset: 0x1E0000
+  Magic: hsqs (little-endian SquashFS magic)
+  Version: 4.0
+  Compression: XZ (compression ID 4)
+  Block size: 131072 bytes (128 KiB)
+  Inodes in superblock: 284
+  Bytes used: 0x1B90C0
+  Absolute used end (exclusive): 0x3990C0
+  Absolute last used byte: 0x3990BF
+  Partition end: 0x3DFFFF
+  Recovered entries: 284; regular files extracted: 82; extraction errors: 0
+
+User filesystem:
+  Offset: 0x3E0000
+  Magic: hsqs
+  Version: 4.0
+  Compression: XZ (compression ID 4)
+  Block size: 131072 bytes (128 KiB)
+  Inodes in superblock: 85
+  Bytes used: 0x2E219E
+  Absolute used end (exclusive): 0x6C219E
+  Absolute last used byte: 0x6C219D
+  Partition end: 0x70FFFF
+  Recovered entries: 85; regular files extracted: 71; extraction errors: 0
+
+Boot flow reconstructed from files
+-----------------------------------
+1. RootFS /linuxrc is the first userspace script. It mounts proc, sysfs and devtmpfs/tmpfs, discovers the MTD partitions, mounts the MTD partition named "mtd" as JFFS2 at /etc, and mounts the "user" SquashFS partition at /opt.
+2. If /etc/init.d/rcS is absent, /linuxrc copies /etc_default/* into /etc and applies mode 0400 to /etc/shadow. It then executes /sbin/init.
+3. /etc/inittab starts /etc/init.d/rcS as the sysinit script and configures a serial getty at 115200 baud on "console".
+4. The active JFFS2 rcS was reconstructed from inode 13's data chunks. Its SHA-256 is identical to the fallback RootFS /etc_default/init.d/rcS: 36c1372934bc48591432ed139dc9990130ab5c72d2b416f34a1177d8f384de58.
+5. rcS starts /opt/autoboot.sh. That script runs /opt/boot/S* in sorted order. /opt/boot/S99dotstart calls /opt/vicam/dotstart.sh start, which delegates to /opt/vicam/runall.sh and the watchdog path to launch /opt/vicam/viCam.
+
+Telnet findings
+---------------
+- RootFS contains /usr/sbin/telnetd as a symlink to ../../bin/busybox.
+- The BusyBox ELF contains the telnetd applet name.
+- The normal rcS startup script contains the line "# telnetd &" commented out. The active JFFS2 rcS and the RootFS fallback rcS are byte-identical, including this comment.
+- A separate debug flow exists: /opt/sh/sdcard_action.sh calls /opt/sh/start_debug.sh when an SD-card add action is handled. start_debug.sh requires debuglog/debug.cfg, calls /opt/bin/ukey -t against that file, requires a non-empty CODE field that passes its time check, and only then starts /usr/sbin/telnetd if TELNET=YES is present. This is conditional debug behavior, not evidence of a permanent default listener.
+- The dump does not establish that telnetd is running at runtime. The debug script invokes telnetd without an explicit "-l /bin/sh" option. No patching or authentication bypass was attempted.
+
+Credential / secret exposure
+----------------------------
+- Active JFFS2 /etc/shadow has a root hash using the $1$ prefix (MD5-crypt). The same root hash is present in the RootFS /etc_default/shadow fallback. /etc/passwd uses the x shadow marker. No plaintext root password was established.
+- /opt/vicam/users.default.json contains a plaintext default application credential for username "admin". The password is redacted here.
+- RootFS /etc_default/hostapd.conf contains a default SSID and WPA passphrase in plaintext. Values are redacted here. Runtime scripts can rewrite these settings when AP mode is configured, so the defaults alone do not prove the active runtime Wi-Fi password.
+- Several configuration files contain a fixed value under an [auth] key field. Its exact security role was not established; treat it as a potential static application/configuration key, not a confirmed login password.
+
+RTSP / ONVIF findings
+---------------------
+- The extracted /opt/vicam/viCam ELF contains RTSP-related strings, including RTSP parser/error text and the token rtsp_thread_create.
+- The binary does NOT contain the literal URL prefix "rtsp://"; no textual "554" or "8554" port value was found in the extracted file set.
+- No "onvif" token was found in either extracted SquashFS filesystem.
+- These are static-string findings only. RTSP-related code may be client/protocol support or an application thread; it does not prove a listening RTSP server. A runtime socket/process check or packet capture is needed to establish whether a server is exposed.
+
+Application / platform identity
+-------------------------------
+- /opt/vicam/viCam: ELF32, little-endian, ARM EABI5, dynamically linked, stripped.
+- ELF attributes identify ARM926EJ-S / ARMv5TEJ and soft-float ABI.
+- App version: 2.3.0.11291
+- localver: 241203.11291
+- vendor.env reports board identifier f3m10; base_para.ini reports sensor jxf37 and 1920x1080 sensor dimensions.
+- Main application imports the ANYKA camera/media libraries (AK ISP, VI, VPSS, VENC, stream encoder, audio and platform libraries) and contains P2P/STUN/TURN-related symbols and LAN discovery/local-server identifiers.
+
+Recommended safe validation
+---------------------------
+1. On a camera you own and in an isolated lab LAN, inspect runtime listeners/processes (for example, netstat -lntup or the equivalent BusyBox command) before concluding whether RTSP/Telnet is exposed.
+2. Use the documented UART console at 115200 baud for recovery/debug access, and retain a verified full flash backup before any firmware update.
+3. Rotate the plaintext application default credential and the AP default passphrase; do not reuse the firmware defaults on other devices.
+4. Do not enable the debug Telnet path on an untrusted network. The static analysis did not verify the internals or strength of the ukey validator.
+
+Inventory
+---------
+See k11_squashfs_inventory.csv for paths, file types, sizes, symlink targets, and SHA-256 values. Hashes for credential-bearing files are intentionally omitted.

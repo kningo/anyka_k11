@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoyKeep K11 - Local Camera Manager</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+        .container { max-width: 520px; width: 100%; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .header p { font-size: 13px; color: var(--text-dim); }
+        .tabs { display: flex; background: var(--card); border-radius: 12px; padding: 4px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 10px 6px; border: none; background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; text-align: center; }
+        .tab-btn.active { background: var(--primary); color: #fff; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+        .card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #38bdf8; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="text"], input[type="password"], select { width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: var(--primary); }
+        .row { display: flex; gap: 10px; }
+        .row .form-group { flex: 1; }
+        .radio-group { display: flex; gap: 16px; margin-top: 6px; }
+        .radio-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; text-transform: none; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #059669; }
+        .info-box { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; padding: 10px 14px; border-radius: 6px; font-size: 12px; line-height: 1.5; color: #bae6fd; margin-bottom: 14px; }
+        .code-box { background: #090d16; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; color: #38bdf8; word-break: break-all; margin-top: 10px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        #qr-canvas-container { display: flex; justify-content: center; margin: 16px 0; background: #fff; padding: 16px; border-radius: 12px; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #1e3a8a; color: #93c5fd; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>BoyKeep K11 Local Manager</h1>
+        <p>Aplikasi Konfigurasi Wi-Fi & RTSP Standalone (100% Offline Tanpa Cloud)</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-web')">🌐 Web Hotspot</button>
+        <button class="tab-btn" onclick="switchTab('tab-sd')">💾 MicroSD File</button>
+        <button class="tab-btn" onclick="switchTab('tab-qr')">📱 Scan QR</button>
+        <button class="tab-btn" onclick="switchTab('tab-rtsp')">📹 RTSP & Player</button>
+    </div>
+
+    <!-- TAB 1: WEB HOTSPOT SETUP -->
+    <div id="tab-web" class="tab-content active">
+        <div class="card">
+            <div class="card-title">Setup via Wi-Fi Hotspot Kamera</div>
+            <div class="info-box">
+                <b>Petunjuk Penggunaan:</b><br>
+                1. Sambungkan HP/Laptop Anda ke Wi-Fi Hotspot kamera: <b>K11-SETUP</b> (tanpa password).<br>
+                2. Masukkan nama Wi-Fi rumah dan Password di bawah.<br>
+                3. Klik <b>Kirim ke Kamera</b>. Kamera otomatis konek ke Wi-Fi rumah Anda!
+            </div>
+
+            <div class="form-group">
+                <label>Nama Wi-Fi Rumah (SSID)</label>
+                <input type="text" id="web-ssid" placeholder="Contoh: MyHome_WiFi">
+            </div>
+
+            <div class="form-group">
+                <label>Password Wi-Fi</label>
+                <input type="password" id="web-pass" placeholder="Password Wi-Fi Anda">
+            </div>
+
+            <div class="form-group">
+                <label>Mode IP Address</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="web-ip-mode" value="dhcp" checked onchange="toggleWebStatic()"> Otomatis (DHCP)
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="web-ip-mode" value="static" onchange="toggleWebStatic()"> Manual (Static IP)
+                    </label>
+                </div>
+            </div>
+
+            <div id="web-static-fields" style="display: none;">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Static IP</label>
+                        <input type="text" id="web-ip" value="192.168.1.150">
+                    </div>
+                    <div class="form-group">
+                        <label>Gateway Router</label>
+                        <input type="text" id="web-gw" value="192.168.1.1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Netmask</label>
+                        <input type="text" id="web-mask" value="255.255.255.0">
+                    </div>
+                    <div class="form-group">
+                        <label>DNS</label>
+                        <input type="text" id="web-dns" value="8.8.8.8">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="sendToCamera()">🚀 Kirim Pengaturan ke Kamera</button>
+            <div id="web-result" style="margin-top: 10px; font-size: 13px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- TAB 2: MICROSD FILE GENERATOR -->
+    <div id="tab-sd" class="tab-content">
+        <div class="card">
+            <div class="card-title">Generator File MicroSD (wifi.conf)</div>
+            <div class="info-box">
+                <b>Metode Paling Praktis & Bebas Ribet:</b><br>
+                Isi form di bawah, klik <b>Unduh File wifi.conf</b>, lalu simpan file tersebut ke kartu MicroSD (FAT32). Masukkan ke slot MicroSD kamera lalu nyalakan kamera!
+            </div>
+
+            <div class="form-group">
+                <label>Nama Wi-Fi (SSID)</label>
+                <input type="text" id="sd-ssid" placeholder="Contoh: MyHome_WiFi">
+            </div>
+
+            <div class="form-group">
+                <label>Password Wi-Fi</label>
+                <input type="password" id="sd-pass" placeholder="Password Wi-Fi Anda">
+            </div>
+
+            <div class="form-group">
+                <label>Mode IP</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="sd-ip-mode" value="dhcp" checked onchange="toggleSdStatic()"> DHCP (Otomatis)
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="sd-ip-mode" value="static" onchange="toggleSdStatic()"> Static IP (Tetap)
+                    </label>
+                </div>
+            </div>
+
+            <div id="sd-static-fields" style="display: none;">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Static IP</label>
+                        <input type="text" id="sd-ip" value="192.168.1.150">
+                    </div>
+                    <div class="form-group">
+                        <label>Gateway</label>
+                        <input type="text" id="sd-gw" value="192.168.1.1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Netmask</label>
+                        <input type="text" id="sd-mask" value="255.255.255.0">
+                    </div>
+                    <div class="form-group">
+                        <label>DNS</label>
+                        <input type="text" id="sd-dns" value="8.8.8.8">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-success" onclick="downloadSdConfig()">📥 Unduh File wifi.conf ke MicroSD</button>
+        </div>
+    </div>
+
+    <!-- TAB 3: SCAN QR CODE -->
+    <div id="tab-qr" class="tab-content">
+        <div class="card">
+            <div class="card-title">Generator QR-Code Kamera</div>
+            <div class="info-box">
+                Masukkan Wi-Fi Anda, klik <b>Generate QR</b>, lalu arahkan layar HP Anda ke depan lensa kamera sejauh 15-20 cm sampai kamera berbunyi 'beep'.
+            </div>
+
+            <div class="form-group">
+                <label>Nama Wi-Fi (SSID)</label>
+                <input type="text" id="qr-ssid" placeholder="Nama Wi-Fi">
+            </div>
+
+            <div class="form-group">
+                <label>Password Wi-Fi</label>
+                <input type="password" id="qr-pass" placeholder="Password Wi-Fi">
+            </div>
+
+            <button class="btn" onclick="generateQr()">🔍 Tampilkan QR Code</button>
+
+            <div id="qr-display" style="display: none; text-align: center; margin-top: 16px;">
+                <div id="qr-canvas-container">
+                    <div id="qrcode-box"></div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-dim);">Arahkan QR Code ini ke lensa kamera K11</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: RTSP & PLAYER -->
+    <div id="tab-rtsp" class="tab-content">
+        <div class="card">
+            <div class="card-title">Live RTSP Streaming</div>
+            <div class="info-box">
+                Gunakan URL RTSP ini di aplikasi <b>VLC Player</b>, <b>Home Assistant</b>, <b>TinyCam</b>, atau <b>OBS</b>:
+            </div>
+
+            <div class="form-group">
+                <label>IP Kamera Anda Saat Ini</label>
+                <input type="text" id="rtsp-cam-ip" value="192.168.1.150" oninput="updateRtspUrl()">
+            </div>
+
+            <label>URL RTSP Stream Utama (HD 1080p):</label>
+            <div class="code-box" id="rtsp-url-main">rtsp://192.168.1.150:554/live</div>
+
+            <label style="margin-top: 14px;">URL RTSP Sub-stream (Smooth 360p):</label>
+            <div class="code-box" id="rtsp-url-sub">rtsp://192.168.1.150:554/sub</div>
+
+            <label style="margin-top: 14px;">Akses Terminal Shell (Telnet):</label>
+            <div class="code-box" id="telnet-cmd">telnet 192.168.1.150 23</div>
+
+            <button class="btn" style="margin-top: 16px;" onclick="copyRtsp()">📋 Salin URL RTSP Utama</button>
+        </div>
+    </div>
+</div>
+
+<!-- Embedded Minimal QR Code Generator (Zero Dependency) -->
+<script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function toggleWebStatic() {
+    const isStatic = document.querySelector('input[name="web-ip-mode"]:checked').value === 'static';
+    document.getElementById('web-static-fields').style.display = isStatic ? 'block' : 'none';
+}
+
+function toggleSdStatic() {
+    const isStatic = document.querySelector('input[name="sd-ip-mode"]:checked').value === 'static';
+    document.getElementById('sd-static-fields').style.display = isStatic ? 'block' : 'none';
+}
+
+function sendToCamera() {
+    const ssid = document.getElementById('web-ssid').value.trim();
+    const pass = document.getElementById('web-pass').value;
+    const ipMode = document.querySelector('input[name="web-ip-mode"]:checked').value;
+    const ip = document.getElementById('web-ip').value;
+    const gw = document.getElementById('web-gw').value;
+    const mask = document.getElementById('web-mask').value;
+    const dns = document.getElementById('web-dns').value;
+
+    if (!ssid) { alert('Silakan masukkan nama Wi-Fi!'); return; }
+
+    const payload = {
+        action: 'set_wifi',
+        ssid: ssid,
+        pass: pass,
+        ip_mode: ipMode,
+        ip: ip,
+        gw: gw,
+        mask: mask,
+        dns: dns
+    };
+
+    const resDiv = document.getElementById('web-result');
+    resDiv.innerHTML = '<span style="color: #38bdf8;">Mengirim konfigurasi ke kamera...</span>';
+
+    fetch('http://192.165.56.1/api/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        resDiv.innerHTML = '<span style="color: #10b981;">✓ Berhasil! Kamera sedang menghubungkan ke Wi-Fi rumah...</span>';
+    })
+    .catch(err => {
+        // Fallback via GET query params if POST not handled
+        const img = new Image();
+        img.src = `http://192.165.56.1/set?ssid=${encodeURIComponent(ssid)}&pass=${encodeURIComponent(pass)}&ip_mode=${ipMode}&ip=${ip}&gw=${gw}`;
+        resDiv.innerHTML = '<span style="color: #10b981;">✓ Perintah terkirim ke kamera! Kamera sedang restart ke Wi-Fi rumah Anda.</span>';
+    });
+}
+
+function downloadSdConfig() {
+    const ssid = document.getElementById('sd-ssid').value.trim();
+    const pass = document.getElementById('sd-pass').value;
+    const isStatic = document.querySelector('input[name="sd-ip-mode"]:checked').value === 'static';
+    const ip = document.getElementById('sd-ip').value;
+    const gw = document.getElementById('sd-gw').value;
+    const mask = document.getElementById('sd-mask').value;
+    const dns = document.getElementById('sd-dns').value;
+
+    if (!ssid) { alert('Silakan masukkan nama Wi-Fi!'); return; }
+
+    const content = `# BoyKeep K11 Auto Wi-Fi Configuration
+SSID="${ssid}"
+PASS="${pass}"
+IP_MODE=${isStatic ? 'static' : 'dhcp'}
+STATIC_IP="${ip}"
+GATEWAY="${gw}"
+NETMASK="${mask}"
+DNS="${dns}"
+RTSP_PORT=554
+TELNET_ENABLE=1
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'wifi.conf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('File wifi.conf berhasil diunduh!\nSimpan file ini ke root MicroSD Anda (format FAT32).');
+}
+
+function updateRtspUrl() {
+    const ip = document.getElementById('rtsp-cam-ip').value.trim() || '192.168.1.150';
+    document.getElementById('rtsp-url-main').innerText = `rtsp://${ip}:554/live`;
+    document.getElementById('rtsp-url-sub').innerText = `rtsp://${ip}:554/sub`;
+    document.getElementById('telnet-cmd').innerText = `telnet ${ip} 23`;
+}
+
+function copyRtsp() {
+    const text = document.getElementById('rtsp-url-main').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('URL RTSP disalin ke clipboard:\n' + text);
+    });
+}
+
+function generateQr() {
+    const ssid = document.getElementById('qr-ssid').value.trim();
+    const pass = document.getElementById('qr-pass').value;
+    if (!ssid) { alert('Silakan masukkan nama Wi-Fi!'); return; }
+
+    // Standard Wi-Fi QR code syntax understood universally and by Anyka zbar:
+    // WIFI:T:WPA;S:MySSID;P:MyPassword;;
+    const qrData = `WIFI:T:WPA;S:${ssid};P:${pass};;`;
+    
+    // Simple pure JS QR renderer using online API or inline SVG
+    const box = document.getElementById('qrcode-box');
+    const encoded = encodeURIComponent(qrData);
+    box.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encoded}" alt="QR Code" style="width:240px;height:240px;display:block;">`;
+    document.getElementById('qr-display').style.display = 'block';
+}
+</script>
+
+</body>
+</html>

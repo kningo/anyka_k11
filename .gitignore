@@ -1,0 +1,27 @@
+# =====================================================================
+# BoyKeep K11 Standalone RTSP Firmware - Git Ignore List
+# =====================================================================
+
+# 1. Binary firmware and raw SPI Flash chip dumps (8MB)
+# (Excluded to prevent repository bloat and protect hardware Wi-Fi credentials)
+*.bin
+*.tar
+*.zip
+*.pcapng
+*-base64.txt
+k11-dump*
+
+# 2. Private local Wi-Fi configuration (contains actual home credentials)
+wifi.conf
+
+# 3. Intermediate build workspaces, unpack directories, and compilers
+scratch/
+node_modules/
+
+# 4. External Flasher tools (keep separate)
+NeoProgrammer*/
+
+# 5. OS temporary and metadata files
+.DS_Store
+Thumbs.db
+*.log

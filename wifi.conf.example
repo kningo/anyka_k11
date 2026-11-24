@@ -1,0 +1,7 @@
+# ==========================================
+# Konfigurasi Wi-Fi & IP Kamera BoyKeep K11
+# Salin file ini menjadi 'wifi.conf' dan sesuaikan dengan Wi-Fi Anda
+# ==========================================
+SSID="YOUR_WIFI_SSID"
+PASS="YOUR_WIFI_PASSWORD"
+IP_MODE="dhcp"
